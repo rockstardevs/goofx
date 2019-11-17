@@ -114,7 +114,12 @@ func NewDocumentFromXML(reader io.Reader, cleaner Cleaner) (*Document, error) {
 		return nil, err
 	}
 	data = preprocessOFXData(data)
-	cleanXML, err := cleaner.CleanupXML(data)
+	err = cleaner.Init(data)
+	if err != nil {
+		return nil, err
+	}
+
+	cleanXML, err := cleaner.CleanupXML()
 	if err != nil {
 		return nil, err
 	}

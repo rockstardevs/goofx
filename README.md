@@ -69,7 +69,7 @@ func main() {
     // defer f.Close()
     // reader = bufio.NewReader(f)
 
-    document, err := ofx.NewDocumentFromXML(reader, ofx.GetCleaner())
+    document, err := ofx.NewDocumentFromXML(reader, ofx.NewCleaner())
     if err != nil {
         log.Exitf("error parsing data file - %s", err)
     }

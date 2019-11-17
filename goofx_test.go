@@ -27,10 +27,18 @@ func (f FakeReader) Read(p []byte) (int, error) {
 }
 
 type FakeCleaner struct {
+	err  error
 	data string
 }
 
-func (f FakeCleaner) CleanupXML(data []byte) (*bytes.Buffer, error) {
+func (f FakeCleaner) Init(data []byte) error {
+	return nil
+}
+
+func (f FakeCleaner) CleanupXML() (*bytes.Buffer, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
 	return bytes.NewBufferString(f.data), nil
 }
 
@@ -69,60 +77,11 @@ var _ = Describe("goofx", func() {
 			})
 		})
 	})
-	Describe("GetTxns", func() {
-		Context("when given a document with no txns", func() {
-			It("should return an empty txn set", func() {
-				d := &goofx.Document{}
-				t := make([]goofx.Transaction, 0)
-				Expect(d.GetTxns()).To(Equal(&t))
-			})
-		})
-		Context("when given a document a single txn set", func() {
-			It("should return the single txn set", func() {
-				t := []goofx.Transaction{{Type: "DEBIT", Amount: decimal.New(-15, 0)}}
-				d := &goofx.Document{
-					BRMS: []goofx.BankResponseMessageSet{
-						{
-							TRS: goofx.StatementTransactionResponseSet{
-								RS: goofx.StatementResponseSet{Transactions: t},
-							},
-						},
-					},
-				}
-				Expect(d.GetTxns()).To(Equal(&t))
-			})
-		})
-		Context("when given a document with multiple txn sets", func() {
-			It("should return an all txn sets", func() {
-				t1 := []goofx.Transaction{{Type: "CREDIT", Amount: decimal.New(45, 0)}}
-				t2 := []goofx.Transaction{{Type: "DEBIT", Amount: decimal.New(-30, 0)}}
-				expected := make([]goofx.Transaction, 0, len(t1)+len(t2))
-				expected = append(expected, t1...)
-				expected = append(expected, t2...)
-
-				d := &goofx.Document{
-					BRMS: []goofx.BankResponseMessageSet{
-						{
-							TRS: goofx.StatementTransactionResponseSet{
-								RS: goofx.StatementResponseSet{Transactions: t1},
-							},
-						},
-						{
-							TRS: goofx.StatementTransactionResponseSet{
-								RS: goofx.StatementResponseSet{Transactions: t2},
-							},
-						},
-					},
-				}
-				Expect(d.GetTxns()).To(Equal(&expected))
-			})
-		})
-	})
 	Describe("NewDocumentFromXML()", func() {
 		Context("when given invalid file", func() {
 			It("should return an error", func() {
 				r := FakeReader{err: errors.New("fake reader test error")}
-				d, err := goofx.NewDocumentFromXML(&r, goofx.GetCleaner())
+				d, err := goofx.NewDocumentFromXML(&r, goofx.NewCleaner())
 				Expect(err).To(MatchError("fake reader test error"))
 				Expect(d).To(BeNil())
 			})
@@ -138,24 +97,83 @@ var _ = Describe("goofx", func() {
 		Context("when given invalid OFX data missing OFX tag", func() {
 			It("should return an error", func() {
 				r := strings.NewReader("<BANKMSGSRSV1></BANKMSGSRSV1>")
-				d, err := goofx.NewDocumentFromXML(r, goofx.GetCleaner())
+				d, err := goofx.NewDocumentFromXML(r, goofx.NewCleaner())
 				Expect(err).To(MatchError("error - invalid file, OFX tag not found"))
+				Expect(d).To(BeNil())
+			})
+		})
+		Context("when given data that can not be cleaned", func() {
+			It("should return an error", func() {
+				r := strings.NewReader("")
+				d, err := goofx.NewDocumentFromXML(r, &FakeCleaner{err: errors.New("test error - failed to clean data")})
+				Expect(err).To(MatchError("test error - failed to clean data"))
 				Expect(d).To(BeNil())
 			})
 		})
 		Context("when given valid OFX data", func() {
 			It("should return an initialized document", func() {
 				r := strings.NewReader("<OFX></OFX>")
-				d, err := goofx.NewDocumentFromXML(r, goofx.GetCleaner())
+				d, err := goofx.NewDocumentFromXML(r, goofx.NewCleaner())
 				Expect(err).To(BeNil())
 				Expect(d).NotTo(BeNil())
 			})
 			It("should set txn count", func() {
 				r := strings.NewReader("<OFX><STMTTRN><FITID>1</STMTTRN><STMTTRN>2</FITID></STMTTRN></OFX>")
-				d, err := goofx.NewDocumentFromXML(r, goofx.GetCleaner())
+				d, err := goofx.NewDocumentFromXML(r, goofx.NewCleaner())
 				Expect(err).To(BeNil())
 				Expect(d).NotTo(BeNil())
 				Expect(d.TransactionCount).To(Equal(2))
+			})
+		})
+	})
+	Describe("Document", func() {
+		Describe("GetTxns()", func() {
+			Context("when document has no txns", func() {
+				It("should return an empty txn set", func() {
+					d := &goofx.Document{}
+					t := make([]goofx.Transaction, 0)
+					Expect(d.GetTxns()).To(Equal(&t))
+				})
+			})
+			Context("when document has a single txn set", func() {
+				It("should return the single txn set", func() {
+					t := []goofx.Transaction{{Type: "DEBIT", Amount: decimal.New(-15, 0)}}
+					d := &goofx.Document{
+						BRMS: []goofx.BankResponseMessageSet{
+							{
+								TRS: goofx.StatementTransactionResponseSet{
+									RS: goofx.StatementResponseSet{Transactions: t},
+								},
+							},
+						},
+					}
+					Expect(d.GetTxns()).To(Equal(&t))
+				})
+			})
+			Context("when document has multiple txn sets", func() {
+				It("should return all txn sets", func() {
+					t1 := []goofx.Transaction{{Type: "CREDIT", Amount: decimal.New(45, 0)}}
+					t2 := []goofx.Transaction{{Type: "DEBIT", Amount: decimal.New(-30, 0)}}
+					expected := make([]goofx.Transaction, 0, len(t1)+len(t2))
+					expected = append(expected, t1...)
+					expected = append(expected, t2...)
+
+					d := &goofx.Document{
+						BRMS: []goofx.BankResponseMessageSet{
+							{
+								TRS: goofx.StatementTransactionResponseSet{
+									RS: goofx.StatementResponseSet{Transactions: t1},
+								},
+							},
+							{
+								TRS: goofx.StatementTransactionResponseSet{
+									RS: goofx.StatementResponseSet{Transactions: t2},
+								},
+							},
+						},
+					}
+					Expect(d.GetTxns()).To(Equal(&expected))
+				})
 			})
 		})
 	})

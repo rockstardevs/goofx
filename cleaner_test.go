@@ -9,20 +9,36 @@ import (
 )
 
 var _ = Describe("goofx", func() {
+	Describe("Init()", func() {
+		Context("when given an unparsable OFX document", func() {
+			It("should return an error", func() {
+				c := goofx.NewCleaner()
+				err := c.Init([]byte(`<STATUS><CODE>0</CODE></STATUS>`))
+				Expect(err).To(MatchError("error - invalid file, OFX tag not found"))
+			})
+		})
+		Context("when given an valid OFX document", func() {
+			It("should initialize successfully", func() {
+				c := goofx.NewCleaner()
+				err := c.Init([]byte(`<OFX></OFX>`))
+				Expect(err).To(BeNil())
+			})
+		})
+	})
 	Describe("CleanupXML()", func() {
 		Context("when given an unparsable OFX document", func() {
 			DescribeTable("should return an error", func(data []byte, errMessage string) {
-				b, err := goofx.GetCleaner().CleanupXML(data)
-				Expect(b).To(BeNil())
+				cleaner := goofx.NewCleaner()
+				err := cleaner.Init(data)
+				Expect(err).To(BeNil())
+				cleanData, err := cleaner.CleanupXML()
+				Expect(cleanData).To(BeNil())
 				if errMessage != "" {
 					Expect(err).To(MatchError(errMessage))
 				} else {
 					Expect(err).To(HaveOccurred())
 				}
 			},
-				Entry("when missing OFX tag",
-					[]byte(`<STATUS><CODE>0</CODE></STATUS>`),
-					"error - invalid file, OFX tag not found"),
 				Entry("when containing malformed tokens",
 					[]byte(`<OFX>>CODE<</OFX>`),
 					""),
@@ -39,10 +55,13 @@ var _ = Describe("goofx", func() {
 		})
 		Context("when given a parsable OFX document", func() {
 			DescribeTable("should parse to clean XML", func(data []byte, expected []byte) {
-				b, err := goofx.GetCleaner().CleanupXML(data)
-				Expect(err).To(Succeed())
-				Expect(b).ToNot(BeNil())
-				Expect(b.Bytes()).To(Equal(expected))
+				cleaner := goofx.NewCleaner()
+				err := cleaner.Init(data)
+				Expect(err).To(BeNil())
+				cleanData, err := cleaner.CleanupXML()
+				Expect(err).To(BeNil())
+				Expect(cleanData).ToNot(BeNil())
+				Expect(cleanData.Bytes()).To(Equal(expected))
 			},
 				Entry("when aggregate is well formed",
 					[]byte(`<OFX><SIGNONMSGSRSV1>	</SIGNONMSGSRSV1></OFX>`),

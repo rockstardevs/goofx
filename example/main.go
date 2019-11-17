@@ -39,7 +39,7 @@ func main() {
 	`)
 	reader := bytes.NewReader(data)
 
-	document, err := goofx.NewDocumentFromXML(reader, goofx.GetCleaner())
+	document, err := goofx.NewDocumentFromXML(reader, goofx.NewCleaner())
 	if err != nil {
 		log.Fatalf("error parsing data file - %s", err)
 	}

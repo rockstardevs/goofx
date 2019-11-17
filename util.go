@@ -39,7 +39,7 @@ func isInCharacterRange(r rune) (inrange bool) {
 
 // escapeString returns properly escaped XML equivalent of the plain text data s.
 // based on https://golang.org/src/encoding/xml/xml.go:1907
-func escapeString(s string) string {
+func EscapeString(s string) string {
 	var (
 		result bytes.Buffer
 		esc    []byte
