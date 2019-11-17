@@ -62,7 +62,8 @@ var _ = Describe("goofx", func() {
 							<DTSERVER>20191027065402
 							<LANGUAGE>ENG
 							</OFX>`),
-					[]byte(`<OFX><STATUS><CODE>0</CODE><SEVERITY>INFO</SEVERITY></STATUS><DTSERVER>20191027065402</DTSERVER><LANGUAGE>ENG</LANGUAGE></OFX>`)),
+					[]byte(`<OFX><STATUS><CODE>0</CODE><SEVERITY>INFO</SEVERITY></STATUS><DTSERVER>20191027065402</DTSERVER>
+							<LANGUAGE>ENG</LANGUAGE></OFX>`)),
 				Entry("when element is missing starting tags",
 					[]byte(`<OFX>
 							<BANKTRANLIST>

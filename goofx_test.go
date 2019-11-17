@@ -79,10 +79,10 @@ var _ = Describe("goofx", func() {
 		})
 		Context("when given a document a single txn set", func() {
 			It("should return the single txn set", func() {
-				t := []goofx.Transaction{goofx.Transaction{Type: "DEBIT", Amount: decimal.New(-15, 0)}}
+				t := []goofx.Transaction{{Type: "DEBIT", Amount: decimal.New(-15, 0)}}
 				d := &goofx.Document{
 					BRMS: []goofx.BankResponseMessageSet{
-						goofx.BankResponseMessageSet{
+						{
 							TRS: goofx.StatementTransactionResponseSet{
 								RS: goofx.StatementResponseSet{Transactions: t},
 							},
@@ -94,24 +94,20 @@ var _ = Describe("goofx", func() {
 		})
 		Context("when given a document with multiple txn sets", func() {
 			It("should return an all txn sets", func() {
-				t1 := []goofx.Transaction{goofx.Transaction{Type: "CREDIT", Amount: decimal.New(45, 0)}}
-				t2 := []goofx.Transaction{goofx.Transaction{Type: "DEBIT", Amount: decimal.New(-30, 0)}}
+				t1 := []goofx.Transaction{{Type: "CREDIT", Amount: decimal.New(45, 0)}}
+				t2 := []goofx.Transaction{{Type: "DEBIT", Amount: decimal.New(-30, 0)}}
 				expected := make([]goofx.Transaction, 0, len(t1)+len(t2))
-				for _, t := range t1 {
-					expected = append(expected, t)
-				}
-				for _, t := range t2 {
-					expected = append(expected, t)
-				}
+				expected = append(expected, t1...)
+				expected = append(expected, t2...)
 
 				d := &goofx.Document{
 					BRMS: []goofx.BankResponseMessageSet{
-						goofx.BankResponseMessageSet{
+						{
 							TRS: goofx.StatementTransactionResponseSet{
 								RS: goofx.StatementResponseSet{Transactions: t1},
 							},
 						},
-						goofx.BankResponseMessageSet{
+						{
 							TRS: goofx.StatementTransactionResponseSet{
 								RS: goofx.StatementResponseSet{Transactions: t2},
 							},

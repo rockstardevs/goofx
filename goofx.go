@@ -129,7 +129,6 @@ func NewDocumentFromXML(reader io.Reader, cleaner Cleaner) (*Document, error) {
 		document.TransactionCount = len(matches)
 	}
 	return document, nil
-
 }
 
 // GetTxns returns all transactions from the OFX document.
@@ -164,5 +163,5 @@ func ParseDate(d string) (*time.Time, error) {
 	}
 	glog.V(3).Infof("parts:%q format:%s", parts, format)
 	t, err := time.ParseInLocation(format, parts[1], tz)
-	return &t, nil
+	return &t, err
 }

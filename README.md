@@ -3,8 +3,12 @@
 [![Build Status](https://img.shields.io/travis/rockstardevs/goofx.svg)](https://travis-ci.org/rockstardevs/goofx)
 [![License](https://img.shields.io/github/license/rockstardevs/goofx)](https://github.com/rockstardevs/goofx/blob/master/LICENSE)
 [![Coverage Status](https://img.shields.io/coveralls/rockstardevs/goofx.svg)](https://coveralls.io/r/rockstardevs/goofx?branch=master)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/rockstardevs/goofx)
 [![Last Commit](https://img.shields.io/github/last-commit/rockstardevs/goofx)](https://github.com/rockstardevs/goofx/commits/master)
+
+[![Go](https://img.shields.io/github/go-mod/go-version/rockstardevs/goofx)](https://github.com/rockstardevs/goofx/blob/master/go.mod)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/rockstardevs/goofx)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rockstardevs/goofx)](https://goreportcard.com/report/github.com/rockstardevs/goofx)
+[![Maintainability](https://img.shields.io/codeclimate/maintainability-percentage/rockstardevs/goofx)](https://codeclimate.com/github/rockstardevs/goofx)
 
 goofx (go ofx) is a Go library for parsing OFX format data files. It parses OFX data files and handles most common deviations from the spec like missing and unmatched tags.
 
@@ -139,7 +143,7 @@ Elements are used to contain data and can not nest other elements. These are nes
 
 The most common issue with OFX data files from banks is missing starting or closing tags. The library parses this data with a XML decoder and iterates through parsed tokens individually.
 
-For elements, a reference to each starting tag is held till it is matched with a corresponding ending tag. When a character data token is parsed, it is assumed that it follows a starting element tag immediately. Based on the starting tag refenence, either a missing starting tag or ending tag is inferred and the missing tag is created and inserted.
+For elements, a reference to each starting tag is held till it is matched with a corresponding ending tag. When a character data token is parsed, it is assumed that it follows a starting element tag immediately. Based on the starting tag reference, either a missing starting tag or ending tag is inferred and the missing tag is created and inserted.
 
 As an example, this data is missing closing tags for elements.
 
