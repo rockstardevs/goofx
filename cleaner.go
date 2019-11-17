@@ -20,20 +20,15 @@ type Cleaner interface {
 
 type cleaner struct {
 	decoder     *xml.Decoder
-	tagStack    []*xml.StartElement // A stack to keep parsed tags.
-	lastTagIdx  int                 // Index for the last tag on the stack.
-	lastData    string              // Holds the last parsed char data.
-	lastElement *xml.StartElement   // Last parsed element start tag.
-	cleanXML    bytes.Buffer        // Buffer to hold cleaned XML.
+	tagStack    TagStack
+	lastData    string            // Holds the last parsed char data.
+	lastElement *xml.StartElement // Last parsed element start tag.
+	cleanXML    bytes.Buffer      // Buffer to hold cleaned XML.
 }
 
 // NewCleaner returns an instance of cleaner.
 func NewCleaner() Cleaner {
-	return &cleaner{
-		tagStack:   make([]*xml.StartElement, 1000),
-		lastTagIdx: -1,
-		lastData:   "",
-	}
+	return &cleaner{tagStack: NewStack()}
 }
 
 // Init initializes this cleaner with the given data.
@@ -51,13 +46,14 @@ func (c *cleaner) Init(data []byte) error {
 	return nil
 }
 
-// printTagStack returns the tag stack for debugging.
-func (c *cleaner) printTagStack() []string {
-	stack := make([]string, 0)
-	for i := 0; c.lastTagIdx+1 > i; i++ {
-		stack = append(stack, c.tagStack[i].Name.Local)
+func (c *cleaner) closeLastElement(t *xml.EndElement) {
+	if t != nil {
+		writeElementFromName(t.Name, c.lastData, &c.cleanXML)
+	} else {
+		writeElement(c.lastElement, c.lastData, &c.cleanXML)
 	}
-	return stack
+	c.lastData = ""
+	c.lastElement = nil
 }
 
 func (c *cleaner) processStartElement(t xml.StartElement) error {
@@ -71,22 +67,19 @@ func (c *cleaner) processStartElement(t xml.StartElement) error {
 		if c.lastElement == nil {
 			return fmt.Errorf("error: charData(%s) missing start and end tags", c.lastData)
 		}
-		writeElement(c.lastElement, c.lastData, &c.cleanXML)
-		c.lastData = ""
-		c.lastElement = nil
+		c.closeLastElement(nil)
 	}
 	// If this tag is an aggregate, flush it and push it on the stack for dequeue later.
 	// If this tag is an element, update lastElement as it can't have nested tags.
 	if IsAggregate(t.Name.Local) {
 		glog.V(3).Infof("StartTag: %s is aggregate, pushing to stack", t.Name.Local)
-		c.lastTagIdx++
-		c.tagStack[c.lastTagIdx] = &t
+		c.tagStack.Push(&t)
 		writeStartTag(&t, &c.cleanXML)
 	} else {
 		glog.V(3).Infof("StartTag: %s is NOT aggregate, updating lastElement", t.Name.Local)
 		c.lastElement = &t
 	}
-	glog.V(3).Infof("Stack: %#v", c.printTagStack())
+	glog.V(3).Infof("Stack: %#v", c.tagStack.Dump())
 
 	return nil
 }
@@ -111,28 +104,25 @@ func (c *cleaner) processEndElement(t xml.EndElement) error {
 		}
 		if c.lastElement != nil {
 			// Implies this tag is aggregate or same as lastElement.
-			writeElement(c.lastElement, c.lastData, &c.cleanXML)
+			c.closeLastElement(nil)
 		} else {
 			// Implies this tag is not aggregate.
-			writeElementFromName(t.Name, c.lastData, &c.cleanXML)
+			c.closeLastElement(&t)
 		}
-		c.lastData = ""
-		c.lastElement = nil
 	}
 
 	if isAggregate {
 		glog.V(3).Infof("EndTag: %s is aggregate, popping from stack", t.Name.Local)
-		glog.V(3).Infof("Stack: %#v", c.printTagStack())
+		glog.V(3).Infof("Stack: %#v", c.tagStack.Dump())
 		// Close every open tag till the current closing tag is matched.
-		for c.lastTagIdx > -1 {
-			lastTag := c.tagStack[c.lastTagIdx].Name
-			writeEndTag(lastTag, &c.cleanXML)
-			c.lastTagIdx--
-			if lastTag.Local == t.Name.Local {
+		for !c.tagStack.IsEmpty() {
+			lastTag, _ := c.tagStack.Pop()
+			writeEndTag(lastTag.Name, &c.cleanXML)
+			if lastTag.Name.Local == t.Name.Local {
 				break
 			}
 		}
-		glog.V(3).Infof("Stack: %#v", c.printTagStack())
+		glog.V(3).Infof("Stack: %#v", c.tagStack.Dump())
 	}
 
 	return nil
@@ -165,5 +155,6 @@ func (c *cleaner) CleanupXML() (*bytes.Buffer, error) {
 			}
 		}
 	}
+
 	return &c.cleanXML, nil
 }

@@ -1,6 +1,7 @@
 package goofx
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -103,28 +104,13 @@ type Document struct {
 
 // NewDocumentFromXML parses the given file into a Document.
 func NewDocumentFromXML(reader io.Reader, cleaner Cleaner) (*Document, error) {
-	var (
-		document = &Document{} // The parsed document.
-		data     []byte        // Buffer to parse raw bytes from the input file.
-		err      error
-	)
-
-	// Parse raw byte from the source file into data.
-	if data, err = ioutil.ReadAll(reader); err != nil {
-		return nil, err
-	}
-	data = preprocessOFXData(data)
-	err = cleaner.Init(data)
-	if err != nil {
-		return nil, err
-	}
-
-	cleanXML, err := cleaner.CleanupXML()
+	cleanXML, err := cleanData(reader, cleaner)
 	if err != nil {
 		return nil, err
 	}
 
 	glog.V(3).Infof("cleanXML: %s", cleanXML.String())
+	document := &Document{}
 	if err = xml.Unmarshal(cleanXML.Bytes(), document); err != nil {
 		return nil, err
 	}
@@ -133,7 +119,27 @@ func NewDocumentFromXML(reader io.Reader, cleaner Cleaner) (*Document, error) {
 	if matches != nil {
 		document.TransactionCount = len(matches)
 	}
+
 	return document, nil
+}
+
+func cleanData(reader io.Reader, cleaner Cleaner) (*bytes.Buffer, error) {
+	var (
+		data []byte // Buffer to parse raw bytes from the input file.
+		err  error
+	)
+	// Parse raw byte from the source file into data.
+	if data, err = ioutil.ReadAll(reader); err != nil {
+		return nil, err
+	}
+
+	data = preprocessOFXData(data)
+	err = cleaner.Init(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return cleaner.CleanupXML()
 }
 
 // GetTxns returns all transactions from the OFX document.
