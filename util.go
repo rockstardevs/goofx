@@ -86,24 +86,6 @@ func writeStartTag(e *xml.StartElement, buff *bytes.Buffer) {
 	glog.V(3).Infof("pushed: %s", e.Name.Local)
 	buff.WriteByte('<')
 	buff.WriteString(e.Name.Local)
-	// Namespace
-	if e.Name.Space != "" {
-		buff.WriteString(` xmlns="`)
-		buff.WriteString(escapeString(e.Name.Space))
-		buff.WriteByte('"')
-	}
-	// Attributes
-	for _, attr := range e.Attr {
-		name := attr.Name
-		if name.Local == "" {
-			continue
-		}
-		buff.WriteByte(' ')
-		buff.WriteString(name.Local)
-		buff.WriteString(`="`)
-		buff.WriteString(escapeString(attr.Value))
-		buff.WriteByte('"')
-	}
 	buff.WriteByte('>')
 }
 

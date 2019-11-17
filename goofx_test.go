@@ -65,7 +65,7 @@ var _ = Describe("goofx", func() {
 			It("should return an error", func() {
 				got, err := goofx.ParseDate("20170226120000.000[0:TTT]")
 				Expect(got).To(BeNil())
-				Expect(err).To(MatchError("unknown time zone TTT"))
+				Expect(err).To(MatchError(MatchRegexp("unknown time zone TTT|cannot find TTT .*")))
 			})
 		})
 	})

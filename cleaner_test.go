@@ -45,8 +45,8 @@ var _ = Describe("goofx", func() {
 				Expect(b.Bytes()).To(Equal(expected))
 			},
 				Entry("when aggregate is well formed",
-					[]byte(`<OFX><SIGNONMSGSRSV1 foo="bar">	</SIGNONMSGSRSV1></OFX>`),
-					[]byte(`<OFX><SIGNONMSGSRSV1 foo="bar"></SIGNONMSGSRSV1></OFX>`)),
+					[]byte(`<OFX><SIGNONMSGSRSV1>	</SIGNONMSGSRSV1></OFX>`),
+					[]byte(`<OFX><SIGNONMSGSRSV1></SIGNONMSGSRSV1></OFX>`)),
 				Entry("when aggregate is missing end tags",
 					[]byte(`<OFX><SIGNONMSGSRSV1></OFX>`),
 					[]byte(`<OFX><SIGNONMSGSRSV1></SIGNONMSGSRSV1></OFX>`)),
