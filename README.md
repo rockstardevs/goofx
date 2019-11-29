@@ -103,19 +103,21 @@ func main() {
 //              EndDate:"20190131120000.000[0:GMT]",
 //              Transactions:[]goofx.Transaction{
 //                goofx.Transaction{
+//                  ID:"",
 //                  Type:"DEBIT",
 //                  Posted:"20190119090000",
 //                  Amount:decimal.Decimal{value:(*big.Int)(0xc000143060), exp:-2},
-//                  ID:"20190119090001",
+//                  FitID:"20190119090001",
 //                  Date:"",
 //                  Name:"Sample Expense",
 //                  Payee:"",
 //                  Memo:""},
 //                goofx.Transaction{
+//                  ID:"",
 //                  Type:"DEBIT",
 //                  Posted:"20191115090000",
 //                  Amount:decimal.Decimal{value:(*big.Int)(0xc000143320), exp:-2},
-//                  ID:"20190122090002",
+//                  FitID:"20190122090002",
 //                  Date:"",
 //                  Name:"Another Expense",
 //                  Payee:"",
