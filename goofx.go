@@ -45,10 +45,11 @@ const (
 )
 
 type Transaction struct {
+	ID     string          `xml:"_"`
 	Type   TransactionType `xml:"TRNTYPE"`
 	Posted string          `xml:"DTPOSTED"`
 	Amount decimal.Decimal `xml:"TRNAMT"`
-	ID     string          `xml:"FITID"`
+	FitID  string          `xml:"FITID"`
 	Date   string          `xml:"DTUSER,omitempty"`
 	Name   string          `xml:"NAME,omitempty"`
 	Payee  string          `xml:"PAYEE,omitempty"`
