@@ -14,6 +14,7 @@ import (
 	"github.com/golang/glog"
 )
 
+//go:generate mockgen -package=mocks -source=cleaner.go -mock_names Cleaner=MockOFXCleaner -destination=mocks/cleaner.go
 //revive:disable:exported
 
 var txnPattern = regexp.MustCompile(`<STMTTRN>`)
