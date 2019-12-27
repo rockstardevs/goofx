@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"github.com/shopspring/decimal"
+	"github.com/rockstardevs/decimal"
 
 	"github.com/rockstardevs/goofx"
 )

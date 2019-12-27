@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/shopspring/decimal"
+	"github.com/rockstardevs/decimal"
 
 	"github.com/golang/glog"
 )

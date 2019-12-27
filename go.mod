@@ -7,5 +7,5 @@ require (
 	github.com/golang/mock v1.3.1
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
-	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
+	github.com/rockstardevs/decimal v0.0.0-20191227051804-253e93d54a23
 )
