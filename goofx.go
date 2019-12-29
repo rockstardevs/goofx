@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/rockstardevs/decimal"
@@ -14,8 +15,8 @@ import (
 	"github.com/golang/glog"
 )
 
-//go:generate mockgen -package=mocks -source=cleaner.go -mock_names Cleaner=MockOFXCleaner -destination=mocks/cleaner.go
 //revive:disable:exported
+//go:generate mockgen -package=mocks -source=cleaner.go -mock_names Cleaner=MockOFXCleaner -destination=mocks/cleaner.go
 
 var txnPattern = regexp.MustCompile(`<STMTTRN>`)
 
@@ -157,24 +158,31 @@ func (d *Document) GetTxns() *[]Transaction {
 }
 
 // ParseDate parses the given OFX formatted date string to a time.Time object.
-func ParseDate(d string) (*time.Time, error) {
+//
+// If loc is not nil, it is used as the timezone location if the date doesn't
+// contain a parsable timezone.
+func ParseDate(d string, loc *time.Location) (*time.Time, error) {
 	var (
-		re     = regexp.MustCompile(`(?P<date>\d{8})(?P<time>\d{4}\d{2}?(?:\.\d{3})?)?(?:\.\d{3})?(?:\[-?\d+:(?P<tz>\S+)])?`)
+		re     = regexp.MustCompile(`(?P<date>\d{8})(?P<time>\d{4}\d{2}?(?:\.\d{3})?)?(?:\.\d{3})?(?:\[(?P<offset>-?\d+):(?P<tz>\S+)])?`)
 		format = "20060102"
 		parts  = re.FindStringSubmatch(d)
+		err    error
 	)
 	if len(parts) == 0 {
 		return nil, errors.New("error - date string can not be parsed")
 	}
-	timezone := "UTC"
-	if parts[3] != "" {
-		timezone = parts[3]
+	location := loc
+	if location == nil {
+		location = time.FixedZone("UTC", 0)
 	}
-	tz, err := time.LoadLocation(timezone)
-	if err != nil {
-		return nil, err
+	if parts[3] != "" {
+		offset, err := strconv.ParseFloat(parts[3], 64)
+		if err != nil {
+			return nil, errors.New("error - date tz offset can not be parsed")
+		}
+		location = time.FixedZone(parts[3], int(offset*60*60))
 	}
 	glog.V(3).Infof("parts:%q format:%s", parts, format)
-	t, err := time.ParseInLocation(format, parts[1], tz)
+	t, err := time.ParseInLocation(format, parts[1], location)
 	return &t, err
 }

@@ -14,10 +14,6 @@ import (
 	"github.com/rockstardevs/goofx"
 )
 
-const (
-	layoutISO = "2006-01-02"
-)
-
 type FakeReader struct {
 	err error
 }
@@ -45,20 +41,23 @@ func (f FakeCleaner) CleanupXML() (*bytes.Buffer, error) {
 var _ = Describe("goofx", func() {
 	Describe("ParseDate()", func() {
 		Context("when given a valid date string", func() {
-			DescribeTable("should parse to a time.", func(input, expected string) {
-				e, _ := time.Parse(layoutISO, expected)
-				got, err := goofx.ParseDate(input)
+			DescribeTable("should parse to a time.", func(input, expected string, loc *time.Location) {
+				e, _ := time.Parse(time.RFC822Z, expected)
+				got, err := goofx.ParseDate(input, loc)
 				Expect(*got).To(BeTemporally("==", e))
 				Expect(err).To(Succeed())
 			},
-				Entry("YYYYMMDD", "20191001", "2019-10-01"),
-				Entry("YYYYMMDDHHMMSS", "20171108000000", "2017-11-08"),
-				Entry("YYYYMMDDHHMMSS.f[z:Z]", "20170226120000.000[0:GMT]", "2017-02-26"),
+				Entry("YYYYMMDD", "20191001", "01 Oct 19 00:00 +0000", nil),
+				Entry("YYYYMMDD", "20191001", "01 Oct 19 00:00 -1100", time.FixedZone("TTT", -11*60*60)),
+				Entry("YYYYMMDDHHMMSS", "20171108090000", "08 Nov 17 00:00 +0000", nil),
+				Entry("YYYYMMDDHHMMSS", "20171108090000", "08 Nov 17 00:00 +1000", time.FixedZone("TTT", 10*60*60)),
+				Entry("YYYYMMDDHHMMSS.f[z:Z]", "20170226120000.000[0:GMT]", "26 Feb 17 00:00 +0000", nil),
+				Entry("YYYYMMDDHHMMSS.f[z:Z]", "20180313093000.000[-10:EDT]", "13 Mar 18 00:00 -1000", nil),
 			)
 		})
 		Context("when given a invalid date string", func() {
 			DescribeTable("should return an error.", func(input string) {
-				got, err := goofx.ParseDate(input)
+				got, err := goofx.ParseDate(input, nil)
 				Expect(got).To(BeNil())
 				Expect(err).To(MatchError("error - date string can not be parsed"))
 			},
@@ -68,13 +67,6 @@ var _ = Describe("goofx", func() {
 				Entry("Missing month and date", "2019"),
 				Entry("Missing date", "2019-01"),
 			)
-		})
-		Context("when given a invalid timezone string", func() {
-			It("should return an error", func() {
-				got, err := goofx.ParseDate("20170226120000.000[0:TTT]")
-				Expect(got).To(BeNil())
-				Expect(err).To(MatchError(MatchRegexp("unknown time zone TTT|cannot find TTT .*")))
-			})
 		})
 	})
 	Describe("NewDocumentFromXML()", func() {
